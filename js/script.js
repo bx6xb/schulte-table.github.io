@@ -2,41 +2,62 @@
 const body = document.querySelector("body");
 const startScreen = document.querySelector(".start-screen");
 const startScreenBtn = document.querySelector(".start-screen-image");
-const settingsScreen = document.querySelector(".settings-screen ");
+const settingsScreen = document.querySelector(".settings-screen");
+const bestScoresScreen = document.querySelector(".best-scores-screen");
 const restartBtn = document.getElementById("restart-button");
 const settingsBtn = document.getElementById("settings-button");
 const blackScreen = document.querySelector(".black-screen");
 const gameGrid = document.querySelector(".game-field-grid");
 const findSection = document.querySelector(".best-score-find");
 const findNum = document.querySelector(".best-score-find-num");
+const bestScoreBlock = document.querySelector(".best-score-time");
 const bestRecordValue = document.querySelector(".best-score-time-value");
-const closeBtn = document.getElementById("close-btn");
+const fieldSizeValue = document.querySelector(
+  ".best-score-time-field-size-value"
+);
+const bestScoresScreenClose = document.getElementById(
+  "best-scores-screen-close"
+);
+const settingsScreenClose = document.getElementById("settings-screen-close");
 const freezeTimeInput = document.getElementById("freeze-time-input");
 const rangeSeconds = document.querySelector(".range-seconds");
 const themeInput = document.querySelectorAll("input[name='theme']");
 const fieldSizeInput = document.getElementById("field-size-input");
 const checkboxInput = document.getElementById("checkbox-input");
+const trs = document.getElementsByTagName("tr");
 
 // JS variables
-const settings = {
+let settings = {
   gridHeight: 3,
   gridWidth: 3,
-  bestRecord: Infinity,
+  bestRecord: {
+    "2x2": [null, ""],
+    "3x3": [null, ""],
+    "4x4": [null, ""],
+    "5x5": [null, ""],
+    "6x6": [null, ""],
+    "7x7": [null, ""],
+    "8x8": [null, ""],
+    "9x9": [null, ""],
+    "10x10": [null, ""],
+  },
   freezeTime: 3,
   theme: "bright",
   hints: "off",
-  bestRecordConvertedTime: "",
 };
 
 let currentNumber = 1;
 
 // Functions
+
+// Starts game
 const start = () => {
-  blockBtns();
   clearGrid();
+  blockBtns();
   timerStart();
 };
 
+// Block restart and settings buttons while freeze time is running
 const blockBtns = () => {
   restartBtn.classList.add("disabled");
   settingsBtn.classList.add("disabled");
@@ -46,9 +67,11 @@ const blockBtns = () => {
   }, settings.freezeTime * 1000 + 200);
 };
 
+// Starts the timer before the game
 const timerStart = () => {
   blackScreen.classList.add("show-flex");
   let time = settings.freezeTime;
+
   const interval = setInterval(() => {
     if (time <= 0) {
       clearInterval(interval);
@@ -60,6 +83,50 @@ const timerStart = () => {
   }, 100);
 };
 
+// Fills the grid and records the result
+const fillGrid = () => {
+  checkFieldSettings();
+
+  const amountOfFields = settings.gridHeight * settings.gridWidth;
+  const arrayOfNums = arrayRandomFill(amountOfFields);
+
+  findSection.classList.add("show");
+
+  const startTime = performance.now();
+
+  arrayOfNums.forEach((value) => {
+    const field = document.createElement("div");
+
+    field.classList.add("field");
+
+    if (settings.theme === "dark") {
+      field.classList.add("white-border");
+    }
+
+    field.innerHTML = value;
+    gameGrid.appendChild(field);
+
+    field.addEventListener("click", () => {
+      if (currentNumber === value) {
+        findNum.innerHTML = ++currentNumber;
+
+        if (settings.hints === "on") {
+          field.classList.add("green-bgc");
+        }
+
+        if (currentNumber > amountOfFields) {
+          const finishTime = performance.now();
+          clearGrid();
+          findSection.classList.remove("show");
+          const solvingTimeArray = showTime(startTime, finishTime);
+          checkRecord(solvingTimeArray);
+        }
+      }
+    });
+  });
+};
+
+// Creats and returns array of random numbers
 const arrayRandomFill = (amount) => {
   const array = [];
 
@@ -73,6 +140,7 @@ const arrayRandomFill = (amount) => {
   return array;
 };
 
+// Check grid width and height
 const checkFieldSettings = () => {
   const computedStyle = getComputedStyle(gameGrid);
   const columnsSize = computedStyle.getPropertyValue("grid-template-columns");
@@ -87,49 +155,23 @@ const checkFieldSettings = () => {
   }
 };
 
-const fillGrid = () => {
-  checkFieldSettings();
-
-  const amountOfFields = settings.gridHeight * settings.gridWidth;
-  const arrayOfNums = arrayRandomFill(amountOfFields);
-
-  findSection.classList.add("show");
-
-  const startTime = performance.now();
-
-  arrayOfNums.forEach((value) => {
-    const field = document.createElement("div");
-    field.classList.add("field");
-    if (settings.theme === "dark") {
-      field.classList.add("white-border");
-    }
-    field.innerHTML = value;
-    gameGrid.appendChild(field);
-    field.addEventListener("click", () => {
-      if (currentNumber === value) {
-        findNum.innerHTML = ++currentNumber;
-        if (settings.hints === "on") {
-          field.classList.add("green-bgc");
-        }
-        if (currentNumber > amountOfFields) {
-          findSection.classList.remove("show");
-          clearGrid();
-          const solvingTimeArray = showTime(startTime);
-          checkRecord(solvingTimeArray);
-        }
-      }
-    });
-  });
-};
-
+// Records the best record
 const checkRecord = (timeArray) => {
-  if (timeArray[0] < settings.bestRecord) {
-    settings.bestRecord = timeArray[0];
-    settings.bestRecordConvertedTime = timeArray[1];
+  const key = `${settings.gridWidth}x${settings.gridHeight}`;
+
+  if (
+    timeArray[0] < settings.bestRecord[key][0] ||
+    settings.bestRecord[key][0] === null
+  ) {
+    settings.bestRecord[key] = timeArray;
     bestRecordValue.innerHTML = timeArray[1];
+    trs[settings.gridWidth - 1].children[1].innerHTML = timeArray[1];
   }
+
+  save();
 };
 
+// Convert seconds to hh:mm:ss:msms format
 const convertTime = (time) => {
   const milliseconds = +time.toString().split(".")[1];
   const timeWithoutMilleseconds = +time.toString().split(".")[0];
@@ -147,8 +189,9 @@ const convertTime = (time) => {
   return convertedTime;
 };
 
-const showTime = (startTime) => {
-  const solvingTime = ((performance.now() - startTime) / 1000).toFixed(2);
+// Shows solvung time after completing game
+const showTime = (startTime, finishTime) => {
+  const solvingTime = ((finishTime - startTime) / 1000).toFixed(2);
 
   solvingConvertedTime = convertTime(solvingTime);
 
@@ -163,29 +206,93 @@ const showTime = (startTime) => {
   return [solvingTime, solvingConvertedTime];
 };
 
+// Clears the grid
 const clearGrid = () => {
   gameGrid.innerHTML = "";
   currentNumber = 1;
   findNum.innerHTML = currentNumber;
 };
 
+// Changes page theme
 const changeTheme = (value) => {
   const fields = document.querySelectorAll(".field");
-  if (value === "bright") {
+  if (value === "dark") {
     settings.theme = "bright";
     body.classList.remove("dark-theme");
     gameGrid.classList.remove("white-border");
     fields.forEach((field) => {
       field.classList.remove("white-border");
     });
-  }
-  if (value === "dark") {
+  } else {
     settings.theme = "dark";
     body.classList.add("dark-theme");
     gameGrid.classList.add("white-border");
     fields.forEach((field) => {
       field.classList.add("white-border");
     });
+  }
+};
+
+// Saves settings in local storage of browser
+const save = () => {
+  const settingsJson = JSON.stringify(settings);
+  localStorage.setItem("settings", settingsJson);
+};
+
+// Updates settings from local storage
+const updateSettings = () => {
+  const size = settings.gridWidth + "x" + settings.gridWidth;
+
+  // Updates field size and best record in 'best time' header
+  fieldSizeValue.innerHTML = size;
+  const record = !!settings.bestRecord[size][1]
+    ? settings.bestRecord[size][1]
+    : 0;
+  bestRecordValue.innerHTML = record;
+
+  // Updates theme
+  const theme = settings.theme === "bright" ? "dark" : "bright";
+  changeTheme(theme);
+
+  // Updates value of checkbox in settings
+  settings.hints === "on"
+    ? checkboxInput.setAttribute("checked", "true")
+    : null;
+
+  // Updates value of theme input in settings
+  if (settings.theme === "bright") {
+    themeInput[0].setAttribute("checked", "true");
+    themeInput[1].setAttribute("checked", "false");
+  } else {
+    themeInput[1].setAttribute("checked", "true");
+    themeInput[0].setAttribute("checked", "false");
+  }
+
+  // Updates field seze in settings
+  fieldSizeInput.value = settings.gridHeight;
+
+  // Updates freeze time in settings
+  freezeTimeInput.value = settings.freezeTime;
+  rangeSeconds.innerHTML = settings.freezeTime + "s";
+
+  // Updates best time table
+  Object.keys(settings.bestRecord).forEach((key, index) => {
+    console.log(key + " - " + index);
+    if (settings.bestRecord[key][1]) {
+      trs[index + 1].children[1].innerHTML = settings.bestRecord[key][1];
+    } else {
+      console.log(123);
+    }
+  });
+};
+
+// Gets and sets new settings from local storage
+const setSettings = () => {
+  const dataFromLS = localStorage.getItem("settings");
+  if (dataFromLS) {
+    const settingsJson = JSON.parse(dataFromLS);
+    settings = settingsJson;
+    updateSettings();
   }
 };
 
@@ -206,13 +313,14 @@ settingsBtn.addEventListener("click", () => {
   settingsScreen.classList.add("show-flex");
 });
 
-closeBtn.addEventListener("click", () => {
+settingsScreenClose.addEventListener("click", () => {
   settingsScreen.classList.remove("show-flex");
 });
 
 themeInput.forEach((radio) => {
   radio.addEventListener("input", () => {
-    changeTheme(radio.value);
+    changeTheme();
+    save();
   });
 });
 
@@ -222,11 +330,29 @@ freezeTimeInput.addEventListener("input", () => {
     blackScreen.innerHTML = freezeTimeInput.value + "s";
   }
   settings.freezeTime = freezeTimeInput.value;
+
+  save();
 });
 
 fieldSizeInput.addEventListener("change", () => {
-  settings.gridHeight = fieldSizeInput.value;
-  settings.gridWidth = fieldSizeInput.value;
+  const size = fieldSizeInput.value;
+
+  settings.gridHeight = size;
+  settings.gridWidth = size;
+
+  for (let key in settings.bestRecord) {
+    if (key.includes(fieldSizeInput.value)) {
+      fieldSizeValue.innerHTML = size + "x" + size;
+      if (settings.bestRecord[key][1] !== "") {
+        bestRecordValue.innerHTML = settings.bestRecord[key][1];
+      } else {
+        bestRecordValue.innerHTML = 0;
+      }
+    }
+  }
+
+  save();
+  start();
 });
 
 checkboxInput.addEventListener("change", () => {
@@ -235,6 +361,18 @@ checkboxInput.addEventListener("change", () => {
   } else {
     settings.hints = "off";
   }
+
+  save();
+});
+
+bestScoreBlock.addEventListener("click", () => {
+  bestScoresScreen.classList.add("show-flex");
+});
+
+bestScoresScreenClose.addEventListener("click", () => {
+  bestScoresScreen.classList.remove("show-flex");
 });
 
 restartBtn.addEventListener("click", start);
+
+setSettings();
