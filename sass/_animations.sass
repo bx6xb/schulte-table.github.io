@@ -1,14 +1,30 @@
+// Animation classes
 .disappear
     animation: disappear .4s linear
+.right-shift-animation
+    animation: right-shift-animation .4s linear
+.left-shift-animation
+    animation: left-shift-animation .4s linear
+// Reversed animations
+.right-shift-animation-reversed
+    animation: right-shift-animation .4s linear
+    animation-direction: alternate
+.left-shift-animation-reversed
+    animation: left-shift-animation .4s linear
+    animation-direction: alternate
+// Animations
 @keyframes disappear
     0%
         opacity: 1
     100%
         opacity: 0
-.appear
-    animation: appear .4s linear
-@keyframes appear
+@keyframes right-shift-animation
     0%
-        opacity: 0
+        right: 0
     100%
-        opacity: 1
+        right: -130px
+@keyframes left-shift-animation
+    0%
+        left: 0
+    100%
+        left: -105px

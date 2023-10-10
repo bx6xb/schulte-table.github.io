@@ -25,6 +25,8 @@ const themeInput = document.querySelectorAll("input[name='theme']");
 const fieldSizeInput = document.getElementById("field-size-input");
 const checkboxInput = document.getElementById("checkbox-input");
 const trs = document.getElementsByTagName("tr");
+const clearDataBtn = document.getElementById("clear-data-btn");
+const additionalConfirm = document.getElementById("additional-confirm");
 
 // JS variables
 let settings = {
@@ -274,6 +276,7 @@ const updateSettings = () => {
   // Updates freeze time in settings
   freezeTimeInput.value = settings.freezeTime;
   rangeSeconds.innerHTML = settings.freezeTime + "s";
+  blackScreen.innerHTML = settings.freezeTime + "s";
 
   // Updates best time table
   Object.keys(settings.bestRecord).forEach((key, index) => {
@@ -374,5 +377,34 @@ bestScoresScreenClose.addEventListener("click", () => {
 });
 
 restartBtn.addEventListener("click", start);
+
+clearDataBtn.addEventListener("click", () => {
+  if (clearDataBtn.classList.contains("left-shift")) {
+    clearDataBtn.classList.add("left-shift-animation-reversed");
+    additionalConfirm.classList.add("right-shift-animation-reversed");
+    setTimeout(() => {
+      clearDataBtn.classList.remove("left-shift");
+      additionalConfirm.classList.remove("right-shift");
+
+      clearDataBtn.classList.remove("left-shift-animation-reversed");
+      additionalConfirm.classList.remove("right-shift-animation-reversed");
+    }, 400);
+  } else {
+    clearDataBtn.classList.add("left-shift-animation");
+    additionalConfirm.classList.add("right-shift-animation");
+    setTimeout(() => {
+      clearDataBtn.classList.add("left-shift");
+      additionalConfirm.classList.add("right-shift");
+
+      clearDataBtn.classList.remove("left-shift-animation");
+      additionalConfirm.classList.remove("right-shift-animation");
+    }, 400);
+  }
+});
+
+additionalConfirm.addEventListener("click", () => {
+  localStorage.clear();
+  location.reload();
+});
 
 setSettings();
